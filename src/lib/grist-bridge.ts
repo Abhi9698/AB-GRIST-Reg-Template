@@ -94,7 +94,7 @@ async function gristBridge(): Promise<Bridge> {
     async save(rec) {
       const t = await tableId();
       const { id, ...fields } = rec;
-      fields.LastModifiedOnBy = Date.now() / 1000;
+      fields["LastModifiedOnBy"] = Date.now() / 1000;
       if (id) await grist.docApi.applyUserActions([["UpdateRecord", t, id, fields]]);
       else await grist.docApi.applyUserActions([["AddRecord", t, null, fields]]);
     },

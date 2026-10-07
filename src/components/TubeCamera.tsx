@@ -48,7 +48,7 @@ export function TubeCamera({ onSave, onClose }: { onSave: (dataUrl: string) => v
   const compose = (parts: HTMLCanvasElement[]) => {
     const c = document.createElement("canvas");
     c.width = parts.reduce((a, p) => a + p.width, 0);
-    c.height = parts[0].height;
+    c.height = parts[0]!.height;
     const ctx = c.getContext("2d")!;
     let x = 0;
     for (const p of parts) {
