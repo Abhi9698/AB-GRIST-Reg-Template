@@ -62,26 +62,26 @@
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
+  --radius: 0.6rem;
+  --background: oklch(0.17 0.015 230);
+  --foreground: oklch(0.95 0.01 200);
+  --card: oklch(0.21 0.018 230);
+  --card-foreground: oklch(0.95 0.01 200);
+  --popover: oklch(0.21 0.018 230);
+  --popover-foreground: oklch(0.95 0.01 200);
+  --primary: oklch(0.8 0.14 175);
+  --primary-foreground: oklch(0.17 0.02 230);
+  --secondary: oklch(0.27 0.02 230);
+  --secondary-foreground: oklch(0.95 0.01 200);
+  --muted: oklch(0.25 0.018 230);
+  --muted-foreground: oklch(0.68 0.02 220);
+  --accent: oklch(0.8 0.15 75);
+  --accent-foreground: oklch(0.17 0.02 230);
+  --destructive: oklch(0.65 0.2 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.33 0.02 230);
+  --input: oklch(0.33 0.02 230);
+  --ring: oklch(0.8 0.14 175);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -141,4 +141,31 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
   }
+}
+
+@theme inline {
+  --font-sans: "Work Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@layer components {
+  .panel { @apply rounded-xl border border-border bg-card; box-shadow: 0 10px 40px -20px oklch(0 0 0 / 0.6); }
+  .field-label { @apply mb-1 block text-xs font-medium uppercase tracking-wider text-muted-foreground; }
+  .field { @apply w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30; }
+  .btn-primary { @apply inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:brightness-110 disabled:opacity-50; }
+  .btn-ghost { @apply inline-flex items-center rounded-md border border-border px-3 py-2 text-sm hover:bg-muted; }
+  .btn-danger { @apply inline-flex items-center rounded-md border border-destructive px-3 py-2 text-sm text-destructive hover:bg-destructive hover:text-destructive-foreground; }
+  .chip { @apply rounded-full border border-border px-3 py-1 text-xs font-medium hover:bg-muted; }
+  .chip-on { @apply border-primary bg-primary/15 text-primary; }
+  .chip-warn { @apply border-accent bg-accent/15 text-accent; }
+  .box-frame { @apply rounded-xl border border-border p-3 sm:p-5; background: radial-gradient(circle at 30% 0%, oklch(0.26 0.03 220), oklch(0.19 0.015 230)); }
+  .tube { @apply relative flex aspect-square items-center justify-center rounded-full border-2 font-mono text-[0.6rem] transition sm:text-xs; }
+  .tube[data-state="empty"] { @apply border-dashed border-muted-foreground/40 text-muted-foreground/40 hover:border-primary hover:text-primary; }
+  .tube[data-state="filled"] { border-color: oklch(0.75 0.13 var(--h)); background: oklch(0.45 0.1 var(--h) / 0.55); color: var(--foreground); box-shadow: inset 0 -4px 8px oklch(0 0 0 / 0.3); }
+  .tube[data-state="filled"]:hover { transform: scale(1.06); }
+  .tube[data-state="locked"] { @apply cursor-not-allowed border-muted bg-muted/60 text-[0.6rem] opacity-70; }
+  .tube[data-selected="true"] { @apply ring-2 ring-primary ring-offset-2 ring-offset-background; }
+  .tube-pos { @apply opacity-0 transition; }
+  .tube:hover .tube-pos { @apply opacity-100; }
+  .tube-label { @apply truncate px-0.5; }
+  .viewfinder { @apply rounded-lg border-2 border-primary; box-shadow: 0 0 0 9999px oklch(0 0 0 / 0.45); }
 }
