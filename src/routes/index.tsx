@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { COLS, ROWS, isMiddle, speciesHue, type SampleRecord } from "@/lib/samples";
 import { createBridge, type Bridge } from "@/lib/grist-bridge";
 import { SampleModal } from "@/components/SampleModal";
@@ -86,7 +86,7 @@ function Widget() {
                 {sel ? (
                   <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
                     {["SampleNumber", "Species", "SampleType", "StatusSample", "IndividualName", "matUUID"].map((k) => (
-                      <><dt key={k} className="text-muted-foreground">{k}</dt><dd key={k + "v"} className="truncate font-mono">{String(sel[k] ?? "—")}</dd></>
+                      <Fragment key={k}><dt className="text-muted-foreground">{k}</dt><dd className="truncate font-mono">{String(sel[k] ?? "—")}</dd></Fragment>
                     ))}
                   </dl>
                 ) : <p className="text-muted-foreground">Empty socket</p>}
@@ -112,8 +112,8 @@ function Widget() {
               <div />
               {COLS.map((c) => <div key={c} className="text-center font-mono text-xs text-muted-foreground">{c}</div>)}
               {ROWS.map((r) => (
-                <>
-                  <div key={r} className="flex items-center font-mono text-xs text-muted-foreground">{r}</div>
+                <Fragment key={r}>
+                  <div className="flex items-center font-mono text-xs text-muted-foreground">{r}</div>
                   {COLS.map((c) => {
                     const pos = `${r}${c}`;
                     const rec = inBox.get(pos);
@@ -134,7 +134,7 @@ function Widget() {
                       </button>
                     );
                   })}
-                </>
+                </Fragment>
               ))}
             </div>
           </div>
