@@ -38,7 +38,7 @@ function Setup() {
             {cols.map((c) => (
               <tr key={c.id} className="border-t border-border">
                 <td className="p-2 font-mono">{c.id}</td><td className="p-2">{c.type}</td>
-                <td className="p-2 text-muted-foreground">{"choices" in c && c.choices ? c.choices.join(", ") : ""}</td>
+                <td className="p-2 text-muted-foreground">{"choices" in c && c.choices ? (c.choices as string[]).join(", ") : ""}</td>
               </tr>
             ))}
           </tbody>

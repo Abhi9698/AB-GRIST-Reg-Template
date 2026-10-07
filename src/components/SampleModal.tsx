@@ -3,7 +3,7 @@ import { SECTIONS, ALL_FIELDS, fromGrist, toGrist, type SampleRecord } from "@/l
 import type { Bridge } from "@/lib/grist-bridge";
 import { TubeCamera } from "./TubeCamera";
 
-export function SampleModal({ boxId, pos, record, bridge, onClose }: { boxId: string; pos: string; record?: SampleRecord; bridge: Bridge; onClose: () => void }) {
+export function SampleModal({ boxId, pos, record, bridge, onClose }: { boxId: string; pos: string; record?: SampleRecord | undefined; bridge: Bridge; onClose: () => void }) {
   const [vals, setVals] = useState<Record<string, string>>(() =>
     Object.fromEntries(ALL_FIELDS.map((f) => [f.id, fromGrist(f.type, record?.[f.id])])),
   );
