@@ -99,7 +99,7 @@ function Widget() {
         <main className="panel p-4 md:p-6">
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <button onClick={() => setUnlocked(!unlocked)} className={unlocked ? "chip chip-warn" : "chip chip-on"}>
-              {unlocked ? "🔓 Middle row/col unlocked" : "🔒 Unlock middle row"}
+              {unlocked ? "Middle row & column unlocked — click to lock" : "Locked · Unlock middle row"}
             </button>
             <div className="flex-1" />
             <span className="text-xs text-muted-foreground">Label:</span>
@@ -130,7 +130,7 @@ function Widget() {
                         className="tube"
                         style={rec ? ({ "--h": speciesHue(String(rec["Species"] ?? "")) } as React.CSSProperties) : undefined}
                       >
-                        {locked ? <span aria-label="locked">🔒</span> : rec ? <span className="tube-label">{label === "Species" ? txt.split(" ").map((w) => w[0]).join("") : txt.replace(/^\D+/, "")}</span> : <span className="tube-pos">{pos}</span>}
+                        {locked ? <svg aria-label="locked" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg> : rec ? <span className="tube-label">{label === "Species" ? txt.split(" ").map((w) => w[0]).join("") : txt.replace(/^\D+/, "")}</span> : <span className="tube-pos">{pos}</span>}
                       </button>
                     );
                   })}
