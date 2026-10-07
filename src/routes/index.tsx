@@ -34,10 +34,10 @@ function Widget() {
     });
   }, []);
 
-  const boxes = useMemo(() => [...new Set(rows.map((r) => String(r.BoxID ?? "")).filter(Boolean))].sort(), [rows]);
+  const boxes = useMemo(() => [...new Set(rows.map((r) => String(r["BoxID"] ?? "")).filter(Boolean))].sort(), [rows]);
   const inBox = useMemo(() => {
     const m = new Map<string, SampleRecord>();
-    rows.filter((r) => r.BoxID === boxId).forEach((r) => m.set(String(r.BoxPosition), r));
+    rows.filter((r) => r["BoxID"] === boxId).forEach((r) => m.set(String(r["BoxPosition"]), r));
     return m;
   }, [rows, boxId]);
   const sel = selected ? inBox.get(selected) : undefined;
@@ -128,7 +128,7 @@ function Widget() {
                         data-state={locked ? "locked" : rec ? "filled" : "empty"}
                         data-selected={selected === pos}
                         className="tube"
-                        style={rec ? ({ "--h": speciesHue(String(rec.Species ?? "")) } as React.CSSProperties) : undefined}
+                        style={rec ? ({ "--h": speciesHue(String(rec["Species"] ?? "")) } as React.CSSProperties) : undefined}
                       >
                         {locked ? <span aria-label="locked">🔒</span> : rec ? <span className="tube-label">{label === "Species" ? txt.split(" ").map((w) => w[0]).join("") : txt.replace(/^\D+/, "")}</span> : <span className="tube-pos">{pos}</span>}
                       </button>
