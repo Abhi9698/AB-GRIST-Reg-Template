@@ -1,0 +1,71 @@
+<!-- Paste into the HTML tab of Grist's Custom Widget builder -->
+<script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+<style>
+  :root{--bg:#0f1417;--panel:#171e22;--line:#2a353b;--fg:#e6ecef;--mut:#8a989f;--pri:#3fc1a5;--warn:#e8a33d}
+  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px system-ui,sans-serif}
+  .wrap{display:grid;grid-template-columns:260px 1fr;gap:14px;padding:14px}
+  @media(max-width:700px){.wrap{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px}
+  .lbl{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);margin-bottom:4px}
+  input,select,textarea{width:100%;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;font:inherit}
+  button{cursor:pointer;font:inherit;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--fg);padding:6px 10px}
+  .pri{background:var(--pri);color:#062;border-color:var(--pri);font-weight:600}
+  .on{border-color:var(--pri);color:var(--pri)} .warn{border-color:var(--warn);color:var(--warn)}
+  .bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}.bar>div{height:100%;background:var(--pri)}
+  .grid{display:grid;grid-template-columns:20px repeat(9,1fr);gap:6px}
+  .hd{font:11px monospace;color:var(--mut);text-align:center;align-self:center}
+  .tube{aspect-ratio:1;border-radius:50%;border:2px solid var(--line);background:#0b1013;font:10px monospace;color:var(--mut);display:flex;align-items:center;justify-content:center;overflow:hidden;padding:0}
+  .tube.filled{color:#fff;border-color:transparent}
+  .tube.locked{opacity:.35;cursor:not-allowed}
+  .tube.sel{outline:3px solid var(--pri);outline-offset:2px}
+  .modal{position:fixed;inset:0;background:#000a;display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:20px}
+  .modal.open{display:flex}.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;width:min(900px,100%);padding:16px}
+  .fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
+  h3{margin:16px 0 8px;font-size:13px;color:var(--pri)} dl{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:6px 0}
+  dt{color:var(--mut)} dd{margin:0;font-family:monospace;overflow:hidden;text-overflow:ellipsis}
+  video,canvas,img.prev{width:100%;border-radius:8px;background:#000}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+</style>
+
+<div class="wrap">
+  <aside>
+    <div class="panel">
+      <div style="font:11px monospace;color:var(--pri)">GRIST · SAMPLES</div>
+      <h2 style="margin:4px 0">Box Registrar</h2>
+      <label class="lbl">Box ID</label>
+      <input id="boxId" list="boxes" value="BOX-001"><datalist id="boxes"></datalist>
+      <div class="row" style="justify-content:space-between;margin-top:10px"><span class="lbl">Occupancy</span><span id="occ" style="font-family:monospace"></span></div>
+      <div class="bar"><div id="occBar"></div></div>
+    </div>
+    <div class="panel" id="selPanel"><span class="lbl">Selected slot</span><p style="color:var(--mut)">Click a position in the box.</p></div>
+  </aside>
+  <main class="panel">
+    <div class="row" style="margin-bottom:12px">
+      <button id="lockBtn" class="on">Locked · Unlock middle row</button>
+      <span style="flex:1"></span><span style="color:var(--mut);font-size:12px">Label:</span>
+      <button data-label="SampleNumber" class="lblBtn on">SampleNumber</button>
+      <button data-label="Species" class="lblBtn">Species</button>
+    </div>
+    <div id="grid" class="grid"></div>
+  </main>
+</div>
+
+<div id="modal" class="modal"><div class="card">
+  <div class="row" style="justify-content:space-between"><h2 id="mTitle" style="margin:0"></h2><button id="mClose">✕</button></div>
+  <h3>Photograph (panoramic tube capture)</h3>
+  <div class="row">
+    <button id="camStart">Start camera</button>
+    <button id="camShot" disabled>Capture segment</button>
+    <button id="camDone" disabled>Stitch panorama</button>
+    <button id="camReset">Reset</button>
+    <span id="camInfo" style="color:var(--mut);font-size:12px"></span>
+  </div>
+  <p style="color:var(--mut);font-size:12px">Rotate the tube a little between captures (3–6 segments) to unwrap the label.</p>
+  <video id="video" autoplay playsinline muted style="display:none;max-height:260px"></video>
+  <img id="pano" class="prev" style="display:none">
+  <div id="form"></div>
+  <div class="row" style="justify-content:flex-end;margin-top:16px">
+    <button id="mDelete" class="warn" style="margin-right:auto">Delete</button>
+    <button id="mCancel">Cancel</button><button id="mSave" class="pri">Save sample</button>
+  </div>
+</div></div>
