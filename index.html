@@ -34,7 +34,7 @@ textarea{min-height:70px;resize:vertical}
 .btn.ghost{background:var(--panel2);color:var(--txt);border:1px solid var(--line)}
 .btn.danger{background:#3a1717;color:#ff9c9c;border:1px solid #6b2a2a}
 .btn:disabled{opacity:.4;cursor:not-allowed}
-.btns{display:flex;gap:8px;flex-wrap:wrap}
+.btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .right{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px}
 .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
 .chip{border:1px solid var(--line);background:var(--panel2);color:var(--txt);border-radius:20px;padding:7px 14px;cursor:pointer;font:inherit;font-weight:600}
@@ -79,7 +79,9 @@ textarea{min-height:70px;resize:vertical}
 .vwrap{position:relative;background:#000;border-radius:12px;overflow:hidden}
 .vwrap video{width:100%;display:block;max-height:60vh;object-fit:contain}
 .guide{position:absolute;top:0;bottom:0;left:50%;width:0;border-left:2px solid var(--acc);opacity:.8;pointer-events:none}
+.guide.horiz{top:50%;bottom:auto;left:0;right:0;width:100%;height:0;border-left:0;border-top:2px solid var(--acc)}
 .band{position:absolute;top:0;bottom:0;left:35%;width:30%;border:1px dashed #fff8;border-top:0;border-bottom:0;pointer-events:none}
+.band.horiz{top:35%;bottom:auto;left:0;right:0;width:100%;height:30%;border:1px dashed #fff8;border-left:0;border-right:0}
 .camrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
 canvas#pv{max-width:100%;border-radius:10px;border:1px solid var(--line);background:#000}
 .hint{color:var(--mut);font-size:13px;margin-top:8px}
@@ -133,6 +135,9 @@ canvas#pv{max-width:100%;border-radius:10px;border:1px solid var(--line);backgro
       <div class="btns" style="margin-bottom:10px">
         <button class="chip on" id="modeSweep">Sweep (4 angles)</button>
         <button class="chip" id="modePano">Panorama (slit-scan)</button>
+        <span style="border-left:1px solid var(--line);height:20px;margin:0 4px"></span>
+        <button class="chip on" id="orientVert">Vertical ↕</button>
+        <button class="chip" id="orientHoriz">Horizontal ↔</button>
       </div>
       <select id="camSel" style="display:none;margin-bottom:10px"></select>
       <div class="vwrap" id="vwrapBox"><video id="vid" playsinline muted></video><div class="band"></div><div class="guide"></div></div>
@@ -247,7 +252,7 @@ if(!demo){
     {id:3,BoxID:"BOX-001",BoxPosition:"B3",SampleNumber:"S-003",Species:"Rattus norvegicus",SampleType:"Tissue",StatusSample:"Registered"},
     {id:4,BoxID:"BOX-002",BoxPosition:"C1",SampleNumber:"S-010",Species:"Apodemus sylvaticus",SampleType:"Swab",StatusSample:"Stored"}];
   const rd=()=>{try{const v=JSON.parse(localStorage.getItem(KEY)); if(v) return v;}catch(e){} const s=seed(); wr(s); return s;};
-  const wr=v=>{try{localStorage.setItem(KEY,JSON.stringify(v));}catch(e){}};
+  const wr=v=>{try{localStorage.setItem(KEY,stringify(v));}catch(e){}};
   api={
     async load(){ return rd(); },
     async add(f){ const v=rd(); v.push({id:Math.max(0,...v.map(r=>r.id))+1,...f}); wr(v); },
@@ -419,7 +424,7 @@ $("cYes").onclick=async()=>{
 };
 
 /* ===================== Tube camera ===================== */
-let live=false, stream=null, mode="sweep", shots=[], slices=null, sliceN=0, sliceTimer=null, comp=null;
+let live=false, stream=null, mode="sweep", orient="vert", shots=[], slices=null, sliceN=0, sliceTimer=null, comp=null;
 const vid=$("vid");
 const BAND=0.30, SLICE_W=6, SLICE_MS=80, MAX_SLICES=600;
 
@@ -450,7 +455,7 @@ async function fillCams(){
   }catch(e){ sel.style.display="none"; }
 }
 $("camSel").onchange=async()=>{
-  try{ await startStream($("camSel").value); setTimeout(()=>{ if(looksBlack()) $("camHint").textContent="Still black. Try another camera in the list."; else $("camHint").textContent="Centre the tube on the green line."; },1200); }
+  try{ await startStream($("camSel").value); setTimeout(()=>{ if(looksBlack()) $("camHint").textContent="Still black. Try another camera in the list."; else updateHint(); },1200); }
   catch(e){ $("camHint").textContent="Could not open that camera: "+(e.name||e.message); }
 };
 async function openCamera(){
@@ -468,7 +473,30 @@ function stopCamera(){ clearInterval(sliceTimer); sliceTimer=null; if(stream){st
 function closeCamera(){ stopCamera(); $("ovCam").classList.remove("show"); if(POPUP) window.close(); }
 $("camClose").onclick=closeCamera;
 function showLive(){ $("camLive").style.display=""; $("camReview").style.display="none"; }
-$("modeSweep").onclick=()=>setMode("sweep"); $("modePano").onclick=()=>setMode("pano");
+
+$("modeSweep").onclick=()=>setMode("sweep"); 
+$("modePano").onclick=()=>setMode("pano");
+$("orientVert").onclick=()=>setOrient("vert");
+$("orientHoriz").onclick=()=>setOrient("horiz");
+
+function setOrient(o){
+  orient=o;
+  $("orientVert").classList.toggle("on",o==="vert");
+  $("orientHoriz").classList.toggle("on",o==="horiz");
+  document.querySelector(".guide").classList.toggle("horiz",o==="horiz");
+  document.querySelector(".band").classList.toggle("horiz",o==="horiz");
+  shots=[];
+  updateHint();
+}
+
+function updateHint(){
+  const guideWord = orient==="vert" ? "vertical green line" : "horizontal green line";
+  if(mode==="sweep"){
+    $("camHint").textContent=`Centre the tube on the ${guideWord}. Capture at 0°, 90°, 180° and 270°.`;
+  }else{
+    $("camHint").textContent=`Centre the tube on the ${guideWord}. Press start, then slowly rotate the tube one full turn.`;
+  }
+}
 
 const ANGLES=[0,90,180,270];
 function pickFile(accept,cb){
@@ -486,41 +514,107 @@ function setMode(m){
   }
   if(m==="sweep"){
     if(live) mk("shotBtn",`Capture ${ANGLES[0]}°`,takeShot); else mk("shotBtn",`Take photo ${ANGLES[0]}°`,takeShotNative);
-    $("camHint").textContent="Capture the tube at 0°, 90°, 180° and 270°; rotate it between shots.";
   }else{
     if(live) mk("panoBtn","Start scan",togglePano); else mk("panoBtn","Record video of rotating tube",recordNative);
-    $("camHint").textContent=live?"Press start, then slowly rotate the tube one full turn. Press stop when done.":"Record one slow full turn of the tube.";
   }
+  updateHint();
 }
-async function cropBitmap(src,w,h){
-  const cw=Math.round(w*BAND), sc=Math.min(1,1600/h);
-  const cv=document.createElement("canvas"); cv.width=Math.round(cw*sc); cv.height=Math.round(h*sc);
-  cv.getContext("2d").drawImage(src,(w-cw)/2,0,cw,h,0,0,cv.width,cv.height); return cv;
+
+function bandCrop(){
+  const vw=vid.videoWidth, vh=vid.videoHeight;
+  const cv=document.createElement("canvas");
+  if(orient==="horiz"){
+    const ch=Math.round(vh*BAND);
+    cv.width=vw; cv.height=ch;
+    cv.getContext("2d").drawImage(vid,0,(vh-ch)/2,vw,ch,0,0,vw,ch);
+  }else{
+    const cw=Math.round(vw*BAND);
+    cv.width=cw; cv.height=vh;
+    cv.getContext("2d").drawImage(vid,(vw-cw)/2,0,cw,vh,0,0,cw,vh);
+  }
+  return cv;
 }
+
+function takeShot(){
+  if(!vid.videoWidth) return;
+  shots.push(bandCrop());
+  if(shots.length<4){
+    $("shotBtn").textContent=`Capture ${ANGLES[shots.length]}°`;
+    $("camHint").textContent=`${shots.length}/4 captured. Rotate the tube to ${ANGLES[shots.length]}°.`;
+    return;
+  }
+  const c=document.createElement("canvas");
+  const x=c.getContext("2d");
+  if(orient==="horiz"){
+    const w=shots[0].width, h=shots[0].height;
+    c.width=w; c.height=h*4;
+    shots.forEach((s,i)=>x.drawImage(s,0,i*h));
+  }else{
+    const cw=shots[0].width, ch=shots[0].height;
+    c.width=cw*4; c.height=ch;
+    shots.forEach((s,i)=>x.drawImage(s,i*cw,0));
+  }
+  review(c);
+}
+
 function takeShotNative(){
   pickFile("image/*",async f=>{
     try{
-      const bmp=await createImageBitmap(f); shots.push(await cropBitmap(bmp,bmp.width,bmp.height));
-      if(shots.length<4){ $("shotBtn").textContent=`Take photo ${ANGLES[shots.length]}°`; $("camHint").textContent=`${shots.length}/4 captured. Rotate the tube to ${ANGLES[shots.length]}°.`; return; }
-      const cw=shots[0].width, ch=shots[0].height, c=document.createElement("canvas"); c.width=cw*4; c.height=ch;
-      const x=c.getContext("2d"); shots.forEach((s,i)=>x.drawImage(s,i*cw,0)); review(c);
-    }catch(e){ $("camHint").textContent="Could not read that photo: "+(e.message||e); }
+      const bmp=await createImageBitmap(f);
+      const w=bmp.width, h=bmp.height;
+      const cv=document.createElement("canvas");
+      if(orient==="horiz"){
+        const ch=Math.round(h*BAND); cv.width=w; cv.height=ch;
+        cv.getContext("2d").drawImage(bmp,0,(h-ch)/2,w,ch,0,0,w,ch);
+      }else{
+        const cw=Math.round(w*BAND); cv.width=cw; cv.height=h;
+        cv.getContext("2d").drawImage(bmp,(w-cw)/2,0,cw,h,0,0,cw,h);
+      }
+      shots.push(cv);
+      if(shots.length<4){
+        $("shotBtn").textContent=`Take photo ${ANGLES[shots.length]}°`;
+        $("camHint").textContent=`${shots.length}/4 captured. Rotate tube to ${ANGLES[shots.length]}°.`;
+        return;
+      }
+      const c=document.createElement("canvas");
+      const x=c.getContext("2d");
+      if(orient==="horiz"){
+        c.width=shots[0].width; c.height=shots[0].height*4;
+        shots.forEach((s,i)=>x.drawImage(s,0,i*shots[0].height));
+      }else{
+        c.width=shots[0].width*4; c.height=shots[0].height;
+        shots.forEach((s,i)=>x.drawImage(s,i*shots[0].width,0));
+      }
+      review(c);
+    }catch(e){ $("camHint").textContent="Could not read photo: "+(e.message||e); }
   });
 }
+
 function recordNative(){
   pickFile("video/*",f=>{
     const v=document.createElement("video"); v.muted=true; v.playsInline=true; v.preload="auto"; v.src=URL.createObjectURL(f);
     v.onerror=()=>{ $("camHint").textContent="Could not read that video."; };
     v.onloadedmetadata=async()=>{
       try{
-        const vw=v.videoWidth, vh=v.videoHeight, H=Math.min(vh,1080), dur=v.duration;
+        const vw=v.videoWidth, vh=v.videoHeight, dur=v.duration;
         if(!vw||!isFinite(dur)) throw new Error("unsupported video");
         const n=Math.min(MAX_SLICES,Math.floor(dur*1000/SLICE_MS));
-        slices=document.createElement("canvas"); slices.width=SLICE_W*Math.max(n,1); slices.height=H; sliceN=0;
+        slices=document.createElement("canvas");
+        if(orient==="horiz"){
+          slices.width=vw; slices.height=SLICE_W*Math.max(n,1);
+        }else{
+          slices.width=SLICE_W*Math.max(n,1); slices.height=vh;
+        }
+        sliceN=0;
         const sx=slices.getContext("2d");
         for(let i=0;i<n;i++){
           await new Promise(r=>{ v.onseeked=r; v.currentTime=Math.min(dur-0.01,i*SLICE_MS/1000); });
-          sx.drawImage(v,(vw-SLICE_W)/2,0,SLICE_W,vh,sliceN*SLICE_W,0,SLICE_W,H); sliceN++;
+          if(orient==="horiz"){
+            sx.drawImage(v,0,(vh-SLICE_W)/2,vw,SLICE_W,0,sliceN*SLICE_W,vw,SLICE_W);
+          }else{
+            sx.drawImage(v,(vw-SLICE_W)/2,0,SLICE_W,vh,sliceN*SLICE_W,0,SLICE_W,vh);
+          }
+          sliceN++;
           if(i%10===0) $("camHint").textContent=`Building panorama… ${Math.round(i/n*100)}%`;
         }
         finishPano();
@@ -528,38 +622,49 @@ function recordNative(){
     };
   });
 }
-function bandCrop(){ const vw=vid.videoWidth, vh=vid.videoHeight, cw=Math.round(vw*BAND);
-  const cv=document.createElement("canvas"); cv.width=cw; cv.height=vh;
-  cv.getContext("2d").drawImage(vid,(vw-cw)/2,0,cw,vh,0,0,cw,vh); return cv; }
-function takeShot(){
-  if(!vid.videoWidth) return;
-  shots.push(bandCrop());
-  if(shots.length<4){ $("shotBtn").textContent=`Capture ${ANGLES[shots.length]}°`; $("camHint").textContent=`${shots.length}/4 captured. Rotate the tube to ${ANGLES[shots.length]}°.`; return; }
-  const cw=shots[0].width, ch=shots[0].height, c=document.createElement("canvas"); c.width=cw*4; c.height=ch;
-  const x=c.getContext("2d"); shots.forEach((s,i)=>x.drawImage(s,i*cw,0)); review(c);
-}
+
 function togglePano(){
   const btn=$("panoBtn");
   if(sliceTimer){ clearInterval(sliceTimer); sliceTimer=null; finishPano(); return; }
   if(!vid.videoWidth) return;
-  slices=document.createElement("canvas"); slices.width=SLICE_W*MAX_SLICES; slices.height=vid.videoHeight; sliceN=0;
+  slices=document.createElement("canvas");
+  if(orient==="horiz"){
+    slices.width=vid.videoWidth; slices.height=SLICE_W*MAX_SLICES;
+  }else{
+    slices.width=SLICE_W*MAX_SLICES; slices.height=vid.videoHeight;
+  }
+  sliceN=0;
   const sx=slices.getContext("2d");
   btn.textContent="Stop scan";
   sliceTimer=setInterval(()=>{
-    sx.drawImage(vid,(vid.videoWidth-SLICE_W)/2,0,SLICE_W,vid.videoHeight,sliceN*SLICE_W,0,SLICE_W,vid.videoHeight);
+    if(orient==="horiz"){
+      sx.drawImage(vid,0,(vid.videoHeight-SLICE_W)/2,vid.videoWidth,SLICE_W,0,sliceN*SLICE_W,vid.videoWidth,SLICE_W);
+    }else{
+      sx.drawImage(vid,(vid.videoWidth-SLICE_W)/2,0,SLICE_W,vid.videoHeight,sliceN*SLICE_W,0,SLICE_W,vid.videoHeight);
+    }
     sliceN++; $("camHint").textContent=`Scanning… ${sliceN} slices`;
     if(sliceN>=MAX_SLICES){ clearInterval(sliceTimer); sliceTimer=null; finishPano(); }
   },SLICE_MS);
 }
+
 function finishPano(){
   if(sliceN<2){ $("camHint").textContent="Too short, try again."; setMode("pano"); return; }
-  const c=document.createElement("canvas"); c.width=sliceN*SLICE_W; c.height=slices.height;
-  c.getContext("2d").drawImage(slices,0,0,c.width,c.height,0,0,c.width,c.height); review(c);
+  const c=document.createElement("canvas");
+  if(orient==="horiz"){
+    c.width=slices.width; c.height=sliceN*SLICE_W;
+    c.getContext("2d").drawImage(slices,0,0,c.width,c.height,0,0,c.width,c.height);
+  }else{
+    c.width=sliceN*SLICE_W; c.height=slices.height;
+    c.getContext("2d").drawImage(slices,0,0,c.width,c.height,0,0,c.width,c.height);
+  }
+  review(c);
 }
+
 function review(c){
   comp=c; $("camLive").style.display="none"; $("camReview").style.display="";
   $("trimL").value=0; $("trimR").value=0; drawPv();
 }
+
 function drawPv(){
   const l=+$("trimL").value, r=+$("trimR").value; $("tlv").textContent=l; $("trv").textContent=r;
   const sx=Math.round(comp.width*l/100), sw=Math.max(1,Math.round(comp.width*(1-(l+r)/100)));
