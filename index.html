@@ -1,71 +1,596 @@
-<!-- Paste into the HTML tab of Grist's Custom Widget builder -->
-<script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Box Registrar</title>
 <style>
-  :root{--bg:#0f1417;--panel:#171e22;--line:#2a353b;--fg:#e6ecef;--mut:#8a989f;--pri:#3fc1a5;--warn:#e8a33d}
-  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px system-ui,sans-serif}
-  .wrap{display:grid;grid-template-columns:260px 1fr;gap:14px;padding:14px}
-  @media(max-width:700px){.wrap{grid-template-columns:1fr}}
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px}
-  .lbl{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);margin-bottom:4px}
-  input,select,textarea{width:100%;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;font:inherit}
-  button{cursor:pointer;font:inherit;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--fg);padding:6px 10px}
-  .pri{background:var(--pri);color:#062;border-color:var(--pri);font-weight:600}
-  .on{border-color:var(--pri);color:var(--pri)} .warn{border-color:var(--warn);color:var(--warn)}
-  .bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}.bar>div{height:100%;background:var(--pri)}
-  .grid{display:grid;grid-template-columns:20px repeat(9,1fr);gap:6px}
-  .hd{font:11px monospace;color:var(--mut);text-align:center;align-self:center}
-  .tube{aspect-ratio:1;border-radius:50%;border:2px solid var(--line);background:#0b1013;font:10px monospace;color:var(--mut);display:flex;align-items:center;justify-content:center;overflow:hidden;padding:0}
-  .tube.filled{color:#fff;border-color:transparent}
-  .tube.locked{opacity:.35;cursor:not-allowed}
-  .tube.sel{outline:3px solid var(--pri);outline-offset:2px}
-  .modal{position:fixed;inset:0;background:#000a;display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:20px}
-  .modal.open{display:flex}.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;width:min(900px,100%);padding:16px}
-  .fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
-  h3{margin:16px 0 8px;font-size:13px;color:var(--pri)} dl{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:6px 0}
-  dt{color:var(--mut)} dd{margin:0;font-family:monospace;overflow:hidden;text-overflow:ellipsis}
-  video,canvas,img.prev{width:100%;border-radius:8px;background:#000}
-  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+:root{--bg:#070d10;--panel:#0f171b;--panel2:#0b1215;--line:#22303a;--txt:#eaf2f4;--mut:#8a9ba4;--acc:#2fdcbc;--accd:#0f3a33;--warn:#ff7a7a}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--txt);font-family:"Work Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:14px}
+.mono{font-family:ui-monospace,Consolas,monospace}
+.app{display:grid;grid-template-columns:minmax(260px,340px) 1fr;gap:16px;padding:12px}
+@media(max-width:760px){.app{grid-template-columns:1fr}}
+.eyebrow{font-family:ui-monospace,Consolas,monospace;color:var(--acc);letter-spacing:.18em;font-size:12px;text-transform:uppercase}
+h1{margin:4px 0 2px;font-size:28px}
+.sub{color:var(--mut);font-size:13px;margin-bottom:14px}
+.sub a{color:var(--txt);cursor:pointer;text-decoration:underline}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.lbl{font-size:12px;letter-spacing:.12em;color:var(--mut);text-transform:uppercase;margin-bottom:6px;display:block}
+input,select,textarea{width:100%;background:#050a0c;border:1px solid var(--line);border-radius:10px;color:var(--txt);padding:11px 12px;font:inherit;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--acc)}
+input[readonly]{color:var(--mut)}
+input[type=range]{padding:0;accent-color:var(--acc)}
+textarea{min-height:70px;resize:vertical}
+#boxId{font-family:ui-monospace,Consolas,monospace;font-size:16px}
+.occ{display:flex;justify-content:space-between;align-items:baseline;margin-top:16px}
+.bar{height:8px;background:#141f25;border-radius:6px;margin-top:8px;overflow:hidden}
+.bar>i{display:block;height:100%;width:0;background:var(--acc);transition:width .3s}
+.slot-name{font-family:ui-monospace,Consolas,monospace;font-size:30px;color:var(--acc);margin:4px 0}
+.slot-sub{color:var(--mut);margin-bottom:14px;word-break:break-word}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin-bottom:14px;font-size:13px}
+.kv b{color:var(--mut);font-weight:500}
+.btn{background:var(--acc);color:#04201a;border:0;border-radius:10px;padding:11px 18px;font:inherit;font-weight:600;cursor:pointer}
+.btn.ghost{background:var(--panel2);color:var(--txt);border:1px solid var(--line)}
+.btn.danger{background:#3a1717;color:#ff9c9c;border:1px solid #6b2a2a}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.right{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.chip{border:1px solid var(--line);background:var(--panel2);color:var(--txt);border-radius:20px;padding:7px 14px;cursor:pointer;font:inherit;font-weight:600}
+.chip.on{border-color:var(--acc);color:var(--acc);background:var(--accd)}
+.toolbar span{color:var(--mut)}
+.grid-wrap{background:linear-gradient(135deg,#0e1b20,#0a1215);border:1px solid var(--line);border-radius:18px;padding:18px;overflow-x:auto}
+.grid{display:grid;grid-template-columns:28px repeat(9,minmax(40px,1fr));gap:8px;min-width:440px;align-items:center;justify-items:center}
+.hd{color:var(--mut);font-family:ui-monospace,Consolas,monospace;font-size:13px}
+.slot{width:100%;max-width:48px;aspect-ratio:1;border-radius:50%;border:1.5px dashed #3a4a54;background:transparent;color:var(--txt);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:9px;padding:2px;overflow:hidden;font-family:ui-monospace,Consolas,monospace;line-height:1.1;text-align:center;word-break:break-all}
+.slot:hover{border-color:var(--acc)}
+.slot.full{border-style:solid;border-width:2px}
+.slot.sel{outline:2px solid var(--acc);outline-offset:2px}
+.slot.lock{border:0;background:#121c21;color:#6d7e87;cursor:not-allowed;font-size:13px}
+.slot.lock.full{border:2px solid;font-size:11px}
+.ov{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;padding:12px;z-index:10}
+.ov.show{display:flex}
+.ov.top{z-index:20}.ov.top2{z-index:30}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:18px;width:100%;max-width:880px;max-height:94vh;display:flex;flex-direction:column}
+.mh{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-start}
+.mh small{font-family:ui-monospace,Consolas,monospace;color:var(--mut);letter-spacing:.08em}
+.mh h2{margin:4px 0 0;font-size:22px}.mh h2 b{color:var(--acc);font-weight:600}
+.x{background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:10px;width:40px;height:40px;font-size:18px;cursor:pointer}
+.mb{padding:16px 22px;overflow:auto}
+.mf{padding:14px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px;align-items:center;flex-wrap:wrap}
+.msg{margin-right:auto;color:var(--warn);font-size:13px}
+.sec{border:1px solid var(--line);border-radius:12px;margin-bottom:10px;background:var(--panel2)}
+.sec>header{display:flex;justify-content:space-between;padding:15px 16px;cursor:pointer;font-weight:600}
+.sec>header i{color:var(--mut);font-style:normal;margin-right:10px;font-weight:400}
+.sec>header em{font-style:normal;color:var(--mut)}
+.sec .body{display:none;grid-template-columns:1fr 1fr;gap:14px;padding:6px 16px 16px}
+.sec.open .body{display:grid}
+.sec .body .full{grid-column:1/-1}
+@media(max-width:600px){.sec .body{grid-template-columns:1fr}}
+.small{max-width:560px;padding:20px 24px;line-height:1.5}
+.small code{background:#050a0c;padding:1px 5px;border-radius:5px}
+.thumbs{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.th{position:relative}
+.th img{height:110px;max-width:260px;border-radius:8px;border:1px solid var(--line);display:block}
+.th button{position:absolute;top:4px;right:4px;background:#000a;color:#fff;border:0;border-radius:6px;cursor:pointer}
+/* camera */
+.cam{max-width:760px}
+.vwrap{position:relative;background:#000;border-radius:12px;overflow:hidden}
+.vwrap video{width:100%;display:block;max-height:60vh;object-fit:contain}
+.guide{position:absolute;top:0;bottom:0;left:50%;width:0;border-left:2px solid var(--acc);opacity:.8;pointer-events:none}
+.band{position:absolute;top:0;bottom:0;left:35%;width:30%;border:1px dashed #fff8;border-top:0;border-bottom:0;pointer-events:none}
+.camrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
+canvas#pv{max-width:100%;border-radius:10px;border:1px solid var(--line);background:#000}
+.hint{color:var(--mut);font-size:13px;margin-top:8px}
 </style>
-
-<div class="wrap">
-  <aside>
-    <div class="panel">
-      <div style="font:11px monospace;color:var(--pri)">GRIST · SAMPLES</div>
-      <h2 style="margin:4px 0">Box Registrar</h2>
-      <label class="lbl">Box ID</label>
-      <input id="boxId" list="boxes" value="BOX-001"><datalist id="boxes"></datalist>
-      <div class="row" style="justify-content:space-between;margin-top:10px"><span class="lbl">Occupancy</span><span id="occ" style="font-family:monospace"></span></div>
-      <div class="bar"><div id="occBar"></div></div>
+</head>
+<body>
+<div class="app">
+  <div>
+    <div class="eyebrow">Grist · Samples · v8</div>
+    <h1>Box Registrar</h1>
+    <div class="sub"><span id="conn">Starting…</span> · <a id="setupLink">Setup guide</a></div>
+    <div class="card">
+      <label class="lbl" for="boxId">Box ID</label>
+      <input id="boxId" value="BOX-001" autocomplete="off" list="boxList">
+      <datalist id="boxList"></datalist>
+      <div class="occ"><span class="lbl" style="margin:0">Occupancy</span><span class="mono" id="occTxt" style="font-size:16px">0/81 filled</span></div>
+      <div class="bar"><i id="occBar"></i></div>
     </div>
-    <div class="panel" id="selPanel"><span class="lbl">Selected slot</span><p style="color:var(--mut)">Click a position in the box.</p></div>
-  </aside>
-  <main class="panel">
-    <div class="row" style="margin-bottom:12px">
-      <button id="lockBtn" class="on">Locked · Unlock middle row</button>
-      <span style="flex:1"></span><span style="color:var(--mut);font-size:12px">Label:</span>
-      <button data-label="SampleNumber" class="lblBtn on">SampleNumber</button>
-      <button data-label="Species" class="lblBtn">Species</button>
+    <div class="card">
+      <span class="lbl">Selected slot</span>
+      <div class="slot-name" id="selName">–</div>
+      <div class="slot-sub" id="selSub">Pick a slot in the grid</div>
+      <div class="kv" id="selKv"></div>
+      <div class="btns"><button class="btn" id="regBtn" disabled>Register sample</button></div>
     </div>
-    <div id="grid" class="grid"></div>
-  </main>
+  </div>
+  <div class="right">
+    <div class="toolbar">
+      <button class="chip on" id="lockBtn">Locked · Unlock middle slots</button>
+      <span>Label:</span>
+      <div id="labelChips" style="display:flex;gap:8px"></div>
+    </div>
+    <div class="grid-wrap"><div class="grid" id="grid"></div></div>
+  </div>
 </div>
 
-<div id="modal" class="modal"><div class="card">
-  <div class="row" style="justify-content:space-between"><h2 id="mTitle" style="margin:0"></h2><button id="mClose">✕</button></div>
-  <h3>Photograph (panoramic tube capture)</h3>
-  <div class="row">
-    <button id="camStart">Start camera</button>
-    <button id="camShot" disabled>Capture segment</button>
-    <button id="camDone" disabled>Stitch panorama</button>
-    <button id="camReset">Reset</button>
-    <span id="camInfo" style="color:var(--mut);font-size:12px"></span>
-  </div>
-  <p style="color:var(--mut);font-size:12px">Rotate the tube a little between captures (3–6 segments) to unwrap the label.</p>
-  <video id="video" autoplay playsinline muted style="display:none;max-height:260px"></video>
-  <img id="pano" class="prev" style="display:none">
-  <div id="form"></div>
-  <div class="row" style="justify-content:flex-end;margin-top:16px">
-    <button id="mDelete" class="warn" style="margin-right:auto">Delete</button>
-    <button id="mCancel">Cancel</button><button id="mSave" class="pri">Save sample</button>
+<!-- register / edit modal -->
+<div class="ov" id="ov"><div class="modal">
+  <div class="mh"><div><small id="mBox"></small><h2 id="mTitle"></h2></div><button class="x" id="mClose">✕</button></div>
+  <div class="mb" id="mBody"></div>
+  <div class="mf"><span class="msg" id="mMsg"></span>
+    <button class="btn danger" id="mDelete" style="display:none">Delete sample</button>
+    <button class="btn ghost" id="mCancel">Cancel</button><button class="btn" id="mSave">Save sample</button></div>
+</div></div>
+
+<!-- camera -->
+<div class="ov top" id="ovCam"><div class="modal cam">
+  <div class="mh"><div><small>TUBE CAMERA</small><h2>Photograph tube</h2></div><button class="x" id="camClose">✕</button></div>
+  <div class="mb">
+    <div id="camLive">
+      <div class="btns" style="margin-bottom:10px">
+        <button class="chip on" id="modeSweep">Sweep (4 angles)</button>
+        <button class="chip" id="modePano">Panorama (slit-scan)</button>
+      </div>
+      <select id="camSel" style="display:none;margin-bottom:10px"></select>
+      <div class="vwrap" id="vwrapBox"><video id="vid" playsinline muted></video><div class="band"></div><div class="guide"></div></div>
+      <div class="camrow" id="camControls"></div>
+      <div class="hint" id="camHint"></div>
+    </div>
+    <div id="camReview" style="display:none">
+      <canvas id="pv"></canvas>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px">
+        <div><label class="lbl">Trim left <span id="tlv">0</span>%</label><input type="range" id="trimL" min="0" max="45" value="0"></div>
+        <div><label class="lbl">Trim right <span id="trv">0</span>%</label><input type="range" id="trimR" min="0" max="45" value="0"></div>
+      </div>
+      <div class="camrow"><button class="btn ghost" id="retake">Retake</button><button class="btn" id="usePhoto">Use photo</button></div>
+    </div>
   </div>
 </div></div>
+
+<!-- confirm + setup -->
+<div class="ov top2" id="ovConfirm"><div class="modal small">
+  <h2 style="margin-top:0" id="cTitle">Delete sample?</h2><p id="cText"></p>
+  <div class="btns"><button class="btn ghost" id="cNo">Cancel</button><button class="btn danger" id="cYes">Delete</button></div>
+</div></div>
+<div class="ov" id="ovSetup"><div class="modal small">
+  <h2 style="margin-top:0">Setup guide</h2>
+  <ol>
+    <li>Add a <b>Custom</b> widget to a page and link it to the <code>Samples</code> table.</li>
+    <li>Use this widget's hosted URL.</li>
+    <li>Set access to <b>Full document access</b>.</li>
+    <li>Pick or type a Box ID, click a slot, then <b>Register sample</b>.</li>
+  </ol>
+  <p class="hint">Outside Grist the widget runs in demo mode with local sample data.</p>
+  <div class="btns"><button class="btn ghost" id="setupClose">Close</button></div>
+</div></div>
+
+<script>
+/* ===================== Loader ===================== */
+(function(){
+  var inFrame = window.self !== window.top;
+  var urls=["https://docs.getgrist.com/grist-plugin-api.js","https://templates.getgrist.com/grist-plugin-api.js","/grist-plugin-api.js"];
+  function next(i){
+    if(window.grist) return start(false);
+    if(i>=urls.length) return start(true);
+    var sc=document.createElement("script"); sc.src=urls[i];
+    sc.onload=function(){ window.grist ? start(false) : next(i+1); };
+    sc.onerror=function(){ next(i+1); };
+    document.head.appendChild(sc);
+  }
+  function go(){ if(!inFrame) start(true); else next(0); }
+  if(document.readyState==="loading") window.addEventListener("DOMContentLoaded",go); else go();
+})();
+
+function start(demo){
+/* ===================== Config ===================== */
+const TABLE="Samples";
+const ROWS="ABCDEFGHI".split(""), COLS=[1,2,3,4,5,6,7,8,9];
+const LOCK_COL=5, LOCK_ROW="E";
+const LABEL_OPTIONS=["SampleNumber","Species"];
+const LAST_MODIFIED_AS="epoch";
+const CHOICES={
+  Sex:["Female","Male","Unknown"],
+  SampleType:["Blood","Feces","Tissue","Hair","Feather","Swab","Urine","Saliva","Other"],
+  SampleVolumeUnit:["µl","ml","mg","g"],
+  TubeFormat:["0.5 ml","1.5 ml","2.0 ml","Cryovial","Other"],
+  StorageTemperature:["RT","4 °C","-20 °C","-80 °C","LN2"],
+  StatusSample:["Registered","Stored","In use","Shipped","Depleted","Destroyed"],
+  BiosafetyClassification:["BSL-1","BSL-2","BSL-3","BSL-4"]
+};
+const SECTIONS=[
+ {n:"Primary Identifiers",open:true,f:[["matUUID","Material UUID","ro"],["HIOHID","HIOH ID"],["SampleNumber","Sample number"],["IndividualName","Individual name"],["IndividualCode","Individual code"],["Label","Label"]]},
+ {n:"Taxonomy & Specimen",f:[["Species","Species"],["CommonName","Common name"],["Sex","Sex"],["Age","Age"]]},
+ {n:"Collection Details",f:[["CollectionDate","Collection date","date"],["CollectionTime","Collection time","time"],["CollectionDay","Day"],["CollectionMonth","Month"],["CollectionYear","Year"],["CollectionDateAdaptation","Date adaptation"],["Collector","Collector"],["SamplingMethod","Sampling method"],["Project","Project"],["Country","Country"],["Region","Region"],["Site","Site"],["Group","Group"],["Nest","Nest"],["GPSLat","GPS latitude","num"],["GPSLong","GPS longitude","num"],["FieldNotes","Field notes","area"]]},
+ {n:"Physical Properties & Storage",f:[["SampleType","Sample type"],["SampleConsistency","Sample consistency"],["SampleVolume","Sample volume","num"],["SampleVolumeUnit","Volume unit"],["StorageMedium","Storage medium"],["TubeFormat","Tube format"],["StorageTemperature","Storage temperature"],["StorageInfo","Storage info"],["StorageInfoDate","Storage info date","dt"],["StorageInfoPerson","Storage info person"],["StorageDateTime","Storage date/time","dt"],["StorageComment","Storage comment","area"]]},
+ {n:"Regulatory & Status",f:[["StatusSample","Sample status"],["StatusInformation","Status information"],["ResearchPermit","Research permit"],["ImportPermit","Import permit"],["BiosafetyClassification","Biosafety classification"],["TransportChain","Transport chain"],["DataCurationComment","Data curation comment","area"]]},
+ {n:"Tube Photograph",photo:true,f:[]}
+];
+
+const $=id=>document.getElementById(id);
+const pad=n=>String(n).padStart(2,"0");
+const QS=new URLSearchParams(location.search);
+const POPUP=!!window.opener && QS.get("camera")==="1";
+let camWin=null;
+let records=[], selected="A1", editingId=null, labelCol="SampleNumber", unlocked=false, connected=false;
+let pending=[];
+
+/* ===================== Data layer ===================== */
+let api, cache=null;
+if(!demo){
+  grist.ready({requiredAccess:"full"});
+  api={
+    async load(){
+      try{ const t=await grist.docApi.fetchTable(TABLE); const out=[];
+        (t.id||[]).forEach((id,i)=>{const r={id}; for(const k in t) if(k!=="id") r[k]=t[k][i]; out.push(r);}); return out; }
+      catch(e){ if(cache) return cache; throw e; } },
+    async add(f){ try{ await grist.docApi.applyUserActions([["AddRecord",TABLE,null,f]]); }catch(e){ await grist.getTable().create({fields:f}); } },
+    async update(id,f){ try{ await grist.docApi.applyUserActions([["UpdateRecord",TABLE,id,f]]); }catch(e){ await grist.getTable().update({id,fields:f}); } },
+    async remove(id){ try{ await grist.docApi.applyUserActions([["RemoveRecord",TABLE,id]]); }catch(e){ await grist.getTable().destroy(id); } },
+    async upload(items){ if(!items.length) return [];
+      const {token,baseUrl}=await grist.docApi.getAccessToken({readOnly:false});
+      const fd=new FormData(); items.forEach(p=>fd.append("upload",p.blob,p.name));
+      const r=await fetch(`${baseUrl}/attachments?auth=${token}`,{method:"POST",body:fd});
+      if(!r.ok) throw new Error("Photo upload failed ("+r.status+")"); return await r.json(); },
+    async photoSrcs(ids){ if(!ids.length) return [];
+      const {token,baseUrl}=await grist.docApi.getAccessToken({readOnly:true});
+      return ids.map(id=>`${baseUrl}/attachments/${id}/download?auth=${token}`); }
+  };
+  grist.onRecords(recs=>{ cache=recs; records=recs; connected=true; $("conn").textContent="Connected to Grist"; render(); },{includeColumns:"all"});
+}else{
+  const KEY="grist-sample-demo";
+  const seed=()=>[
+    {id:1,BoxID:"BOX-001",BoxPosition:"A1",SampleNumber:"S-001",Species:"Mus musculus",SampleType:"Feces",StatusSample:"Stored"},
+    {id:2,BoxID:"BOX-001",BoxPosition:"A2",SampleNumber:"S-002",Species:"Mus musculus",SampleType:"Blood",StatusSample:"Stored"},
+    {id:3,BoxID:"BOX-001",BoxPosition:"B3",SampleNumber:"S-003",Species:"Rattus norvegicus",SampleType:"Tissue",StatusSample:"Registered"},
+    {id:4,BoxID:"BOX-002",BoxPosition:"C1",SampleNumber:"S-010",Species:"Apodemus sylvaticus",SampleType:"Swab",StatusSample:"Stored"}];
+  const rd=()=>{try{const v=JSON.parse(localStorage.getItem(KEY)); if(v) return v;}catch(e){} const s=seed(); wr(s); return s;};
+  const wr=v=>{try{localStorage.setItem(KEY,JSON.stringify(v));}catch(e){}};
+  api={
+    async load(){ return rd(); },
+    async add(f){ const v=rd(); v.push({id:Math.max(0,...v.map(r=>r.id))+1,...f}); wr(v); },
+    async update(id,f){ const v=rd(); const r=v.find(x=>x.id===id); Object.assign(r,f); wr(v); },
+    async remove(id){ wr(rd().filter(r=>r.id!==id)); },
+    async upload(items){ return Promise.all(items.map(p=>new Promise(res=>{const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.readAsDataURL(p.blob);}))); },
+    async photoSrcs(ids){ return ids; }
+  };
+}
+async function refresh(){
+  try{ records=await api.load(); connected=true;
+    $("conn").textContent=demo?"Demo mode (local data)":"Connected to Grist";
+  }catch(e){ connected=false; $("conn").textContent="Not connected: "+(e&&(e.message||e)||"unknown error"); }
+  render();
+}
+
+/* ===================== Grid ===================== */
+const boxId=()=>$("boxId").value.trim();
+const boxRecs=()=>records.filter(r=>r.BoxID===boxId() && r.BoxPosition);
+const recAt=pos=>boxRecs().find(r=>r.BoxPosition===pos);
+const isLocked=(r,c)=>!unlocked && (c===LOCK_COL || r===LOCK_ROW);
+function hue(s){let h=0; for(const ch of String(s||"")) h=(h*31+ch.charCodeAt(0))>>>0; return h%360;}
+
+function render(){
+  const bl=$("boxList"); bl.innerHTML="";
+  [...new Set(records.map(r=>r.BoxID).filter(Boolean))].sort().forEach(b=>{const o=document.createElement("option"); o.value=b; bl.appendChild(o);});
+  const g=$("grid"); g.innerHTML=""; g.appendChild(document.createElement("div"));
+  COLS.forEach(c=>{const d=document.createElement("div"); d.className="hd"; d.textContent=c; g.appendChild(d);});
+  let filled=0;
+  ROWS.forEach(r=>{
+    const h=document.createElement("div"); h.className="hd"; h.textContent=r; g.appendChild(h);
+    COLS.forEach(c=>{
+      const pos=r+c, rec=recAt(pos), b=document.createElement("button"), lk=isLocked(r,c);
+      b.className="slot"; b.title=pos;
+      if(rec){ filled++; const hu=hue(rec.Species); b.classList.add("full");
+        b.style.background=`hsl(${hu} 60% 30% / .85)`; b.style.borderColor=`hsl(${hu} 75% 62%)`; b.style.color=`hsl(${hu} 90% 85%)`;
+        b.textContent=lk?"🔒":(String(rec[labelCol]??"").slice(0,8)||"●"); }
+      if(lk){ b.classList.add("lock"); if(!rec) b.textContent="🔒"; b.disabled=true; }
+      if(pos===selected) b.classList.add("sel");
+      b.onclick=()=>{selected=pos; render();};
+      g.appendChild(b);
+    });
+  });
+  $("occTxt").textContent=filled+"/81 filled"; $("occBar").style.width=(filled/81*100)+"%";
+  const rec=selected&&recAt(selected);
+  $("selName").textContent=selected||"–";
+  $("selSub").textContent=!selected?"Pick a slot in the grid":rec?"Occupied":"Empty socket";
+  const kv=$("selKv"); kv.innerHTML="";
+  if(rec) [["Sample no.",rec.SampleNumber],["Species",rec.Species],["Type",rec.SampleType],["Status",rec.StatusSample]].forEach(([k,v])=>{
+    if(!v) return; const a=document.createElement("b"); a.textContent=k; const z=document.createElement("span"); z.textContent=v; kv.append(a,z); });
+  $("regBtn").disabled=false; $("regBtn").style.cursor="pointer";
+  $("regBtn").textContent=rec?"Edit sample":"Register sample";
+  $("lockBtn").textContent=unlocked?"Unlocked · Lock middle slots":"Locked · Unlock middle slots";
+  $("lockBtn").classList.toggle("on",!unlocked);
+}
+$("boxId").addEventListener("input",()=>render());
+$("lockBtn").onclick=()=>{unlocked=!unlocked; render();};
+$("regBtn").onclick=()=>{
+  if(!selected||isLocked(selected[0],+selected.slice(1))){
+    for(const r of ROWS) for(const c of COLS){ if(!isLocked(r,c)&&!recAt(r+c)){ selected=r+c; render(); return openModal(); } }
+    return;
+  }
+  openModal();
+};
+LABEL_OPTIONS.forEach(c=>{const b=document.createElement("button"); b.className="chip"+(c===labelCol?" on":""); b.textContent=c;
+  b.onclick=()=>{labelCol=c; [...$("labelChips").children].forEach(x=>x.classList.toggle("on",x.textContent===c)); render();};
+  $("labelChips").appendChild(b);});
+$("setupLink").onclick=()=>$("ovSetup").classList.add("show");
+$("setupClose").onclick=()=>$("ovSetup").classList.remove("show");
+
+/* ===================== Form modal ===================== */
+const toDateStr=s=>s?new Date(s*1000).toISOString().slice(0,10):"";
+const toLocalDT=s=>{if(!s)return""; const d=new Date(s*1000); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;};
+
+async function openModal(){
+  const pos=selected, rec=recAt(pos); editingId=rec?rec.id:null; pending=[];
+  $("mBox").textContent=boxId();
+  $("mTitle").innerHTML=`Slot <b>${pos}</b> · ${rec?"edit":"register"}`;
+  $("mMsg").textContent=""; $("mDelete").style.display=rec?"":"none";
+  const body=$("mBody"); body.innerHTML="";
+  SECTIONS.forEach((s,i)=>{
+    const sec=document.createElement("div"); sec.className="sec"+(s.open?" open":"");
+    sec.innerHTML=`<header><span><i>${i+1}</i>${s.n}</span><em>${s.open?"–":"+"}</em></header><div class="body"></div>`;
+    sec.firstChild.onclick=()=>{sec.classList.toggle("open"); sec.querySelector("em").textContent=sec.classList.contains("open")?"–":"+";};
+    const bd=sec.querySelector(".body");
+    if(s.photo){
+      bd.innerHTML=`<div class="full"><div class="btns"><button class="btn ghost" id="camBtn" type="button">📷 Open camera</button>
+        <button class="btn ghost" id="fileBtn" type="button">Choose file</button><input type="file" id="fileIn" accept="image/*" multiple style="display:none"></div>
+        <div class="thumbs" id="thumbs"></div></div>`;
+    }else s.f.forEach(([id,label,t])=>{
+      const w=document.createElement("div"); if(t==="area") w.className="full";
+      const l=document.createElement("label"); l.className="lbl"; l.textContent=label; l.htmlFor="f_"+id;
+      let v=rec?rec[id]:""; if(v==null) v="";
+      let el;
+      if(CHOICES[id]){ el=document.createElement("select"); const opts=[""].concat(CHOICES[id]); if(v&&!opts.includes(v)) opts.push(v);
+        opts.forEach(o=>{const op=document.createElement("option"); op.value=o; op.textContent=o||"—"; el.appendChild(op);});
+        if(!rec&&id==="StatusSample") v="Registered"; el.value=v; t="choice"; }
+      else{
+        el=t==="area"?document.createElement("textarea"):document.createElement("input");
+        if(el.tagName==="INPUT") el.type=t==="date"?"date":t==="dt"?"datetime-local":t==="num"?"number":t==="time"?"time":"text";
+        if(t==="num") el.step="any";
+        if(id==="matUUID"&&!v) v=(crypto.randomUUID?crypto.randomUUID():"xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,c=>{const r=Math.random()*16|0; return (c==="x"?r:(r&3|8)).toString(16);}));
+        el.value=t==="date"?toDateStr(v):t==="dt"?toLocalDT(v):v;
+        if(t==="ro") el.readOnly=true;
+      }
+      el.id="f_"+id; el.dataset.col=id; el.dataset.t=t||"text";
+      w.append(l,el); bd.appendChild(w);
+    });
+    body.appendChild(sec);
+  });
+  const dEl=$("f_CollectionDate");
+  dEl.addEventListener("change",()=>{ if(!dEl.value) return; const [y,m,d]=dEl.value.split("-");
+    if(!$("f_CollectionDay").value) $("f_CollectionDay").value=+d;
+    if(!$("f_CollectionMonth").value) $("f_CollectionMonth").value=+m;
+    if(!$("f_CollectionYear").value) $("f_CollectionYear").value=y; });
+  $("camBtn").onclick=openCamera;
+  $("fileBtn").onclick=()=>$("fileIn").click();
+  $("fileIn").onchange=e=>{ [...e.target.files].forEach(f=>addPending(f,f.name)); e.target.value=""; };
+  $("ov").classList.add("show");
+  const old=rec&&Array.isArray(rec.Photograph)?rec.Photograph.slice(1):[];
+  try{ const srcs=await api.photoSrcs(old); window._oldPhotos=srcs; }catch(e){ window._oldPhotos=[]; }
+  drawThumbs();
+}
+function addPending(blob,name){ pending.push({blob,name,url:URL.createObjectURL(blob)}); drawThumbs(); }
+function drawThumbs(){
+  const t=$("thumbs"); if(!t) return; t.innerHTML="";
+  (window._oldPhotos||[]).forEach(src=>{const d=document.createElement("div"); d.className="th"; const im=document.createElement("img"); im.src=src; d.appendChild(im); t.appendChild(d);});
+  pending.forEach((p,i)=>{const d=document.createElement("div"); d.className="th"; const im=document.createElement("img"); im.src=p.url;
+    const x=document.createElement("button"); x.textContent="✕"; x.type="button"; x.onclick=()=>{pending.splice(i,1); drawThumbs();}; d.append(im,x); t.appendChild(d);});
+}
+const closeModal=()=>$("ov").classList.remove("show");
+$("mClose").onclick=closeModal; $("mCancel").onclick=closeModal;
+
+$("mSave").onclick=async()=>{
+  const msg=$("mMsg"); msg.textContent=""; const pos=selected, b=boxId();
+  if(!b){msg.textContent="Please enter a Box ID."; return;}
+  const clash=records.find(r=>r.BoxID===b&&r.BoxPosition===pos&&r.id!==editingId);
+  if(clash){msg.textContent=`${pos} in ${b} is already taken.`; return;}
+  const f={BoxID:b,BoxPosition:pos,LastModifiedOnBy:LAST_MODIFIED_AS==="iso"?new Date().toISOString():Math.floor(Date.now()/1000)};
+  document.querySelectorAll("#mBody [data-col]").forEach(el=>{
+    const id=el.dataset.col,t=el.dataset.t,v=el.value;
+    if(v===""){ if(editingId) f[id]=(t==="choice"||t==="text"||t==="area"||t==="time")?"":null; return; }
+    if(t==="date"){const [y,m,d]=v.split("-").map(Number); f[id]=Date.UTC(y,m-1,d)/1000;}
+    else if(t==="dt") f[id]=Math.floor(new Date(v).getTime()/1000);
+    else if(t==="num") f[id]=parseFloat(v);
+    else f[id]=v;
+  });
+  $("mSave").disabled=true;
+  try{
+    if(pending.length){
+      const ids=await api.upload(pending);
+      const cur=editingId?(records.find(r=>r.id===editingId).Photograph):null;
+      const oldIds=Array.isArray(cur)?cur.slice(1):[];
+      f.Photograph=["L",...oldIds,...ids];
+    }
+    if(editingId) await api.update(editingId,f); else await api.add(f);
+    closeModal(); await refresh();
+  }catch(e){msg.textContent="Save failed: "+(e.message||e);}
+  $("mSave").disabled=false;
+};
+
+/* delete */
+$("mDelete").onclick=()=>{ $("cText").textContent=`Remove the sample in slot ${selected} of ${boxId()}? This cannot be undone.`; $("ovConfirm").classList.add("show"); };
+$("cNo").onclick=()=>$("ovConfirm").classList.remove("show");
+$("cYes").onclick=async()=>{
+  $("ovConfirm").classList.remove("show");
+  try{ await api.remove(editingId); closeModal(); await refresh(); }
+  catch(e){ $("mMsg").textContent="Delete failed: "+(e.message||e); }
+};
+
+/* ===================== Tube camera ===================== */
+let live=false, stream=null, mode="sweep", shots=[], slices=null, sliceN=0, sliceTimer=null, comp=null;
+const vid=$("vid");
+const BAND=0.30, SLICE_W=6, SLICE_MS=80, MAX_SLICES=600;
+
+async function startStream(deviceId){
+  if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+  const tries=deviceId?[{video:{deviceId:{exact:deviceId}},audio:false}]:[{video:{facingMode:{ideal:"environment"}},audio:false},{video:true,audio:false}];
+  let lastErr;
+  for(const c of tries){
+    try{ stream=await navigator.mediaDevices.getUserMedia(c); break; }catch(e){ lastErr=e; }
+  }
+  if(!stream) throw lastErr||new Error("no camera");
+  vid.srcObject=stream; await vid.play();
+}
+function looksBlack(){
+  if(!vid.videoWidth) return true;
+  const c=document.createElement("canvas"); c.width=24; c.height=24; const x=c.getContext("2d");
+  x.drawImage(vid,0,0,24,24); const d=x.getImageData(0,0,24,24).data; let sum=0;
+  for(let i=0;i<d.length;i+=4) sum+=d[i]+d[i+1]+d[i+2];
+  return sum/(d.length/4*3)<4;
+}
+async function fillCams(){
+  const sel=$("camSel"); sel.innerHTML="";
+  try{
+    const devs=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==="videoinput");
+    devs.forEach((d,i)=>{const o=document.createElement("option"); o.value=d.deviceId; o.textContent=d.label||("Camera "+(i+1)); sel.appendChild(o);});
+    const cur=stream&&stream.getVideoTracks()[0]&&stream.getVideoTracks()[0].getSettings().deviceId; if(cur) sel.value=cur;
+    sel.style.display=devs.length>1?"":"none";
+  }catch(e){ sel.style.display="none"; }
+}
+$("camSel").onchange=async()=>{
+  try{ await startStream($("camSel").value); setTimeout(()=>{ if(looksBlack()) $("camHint").textContent="Still black. Try another camera in the list."; else $("camHint").textContent="Centre the tube on the green line."; },1200); }
+  catch(e){ $("camHint").textContent="Could not open that camera: "+(e.name||e.message); }
+};
+async function openCamera(){
+  $("ovCam").classList.add("show"); showLive(); live=false;
+  let err="";
+  try{
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia) throw new Error("getUserMedia not available");
+    await startStream(); live=true; await fillCams();
+  }catch(e){ err=(e.name||"")+" "+(e.message||""); }
+  setMode(mode||"sweep");
+  if(!live) $("camHint").textContent="Live preview is blocked in this frame ("+err.trim()+"). Use the button below to open the camera in a popup window.";
+  else setTimeout(()=>{ if(looksBlack()) $("camHint").textContent="The video is black. Check lens cover or pick another camera above."; },1500);
+}
+function stopCamera(){ clearInterval(sliceTimer); sliceTimer=null; if(stream){stream.getTracks().forEach(t=>t.stop()); stream=null;} vid.srcObject=null; }
+function closeCamera(){ stopCamera(); $("ovCam").classList.remove("show"); if(POPUP) window.close(); }
+$("camClose").onclick=closeCamera;
+function showLive(){ $("camLive").style.display=""; $("camReview").style.display="none"; }
+$("modeSweep").onclick=()=>setMode("sweep"); $("modePano").onclick=()=>setMode("pano");
+
+const ANGLES=[0,90,180,270];
+function pickFile(accept,cb){
+  const i=document.createElement("input"); i.type="file"; i.accept=accept; i.setAttribute("capture","environment");
+  i.onchange=()=>{ if(i.files&&i.files[0]) cb(i.files[0]); }; i.click();
+}
+function setMode(m){
+  mode=m; shots=[]; sliceN=0; clearInterval(sliceTimer); sliceTimer=null;
+  $("modeSweep").classList.toggle("on",m==="sweep"); $("modePano").classList.toggle("on",m==="pano");
+  const c=$("camControls"); c.innerHTML="";
+  $("vwrapBox").style.display=live?"":"none";
+  const mk=(id,t,fn)=>{const b=document.createElement("button"); b.className="btn"; b.id=id; b.textContent=t; b.onclick=fn; c.appendChild(b); return b;};
+  if(!live && !POPUP){
+    const pb=mk("popBtn","📷 Open live camera in new window",openCamWindow); pb.classList.add("ghost");
+  }
+  if(m==="sweep"){
+    if(live) mk("shotBtn",`Capture ${ANGLES[0]}°`,takeShot); else mk("shotBtn",`Take photo ${ANGLES[0]}°`,takeShotNative);
+    $("camHint").textContent="Capture the tube at 0°, 90°, 180° and 270°; rotate it between shots.";
+  }else{
+    if(live) mk("panoBtn","Start scan",togglePano); else mk("panoBtn","Record video of rotating tube",recordNative);
+    $("camHint").textContent=live?"Press start, then slowly rotate the tube one full turn. Press stop when done.":"Record one slow full turn of the tube.";
+  }
+}
+async function cropBitmap(src,w,h){
+  const cw=Math.round(w*BAND), sc=Math.min(1,1600/h);
+  const cv=document.createElement("canvas"); cv.width=Math.round(cw*sc); cv.height=Math.round(h*sc);
+  cv.getContext("2d").drawImage(src,(w-cw)/2,0,cw,h,0,0,cv.width,cv.height); return cv;
+}
+function takeShotNative(){
+  pickFile("image/*",async f=>{
+    try{
+      const bmp=await createImageBitmap(f); shots.push(await cropBitmap(bmp,bmp.width,bmp.height));
+      if(shots.length<4){ $("shotBtn").textContent=`Take photo ${ANGLES[shots.length]}°`; $("camHint").textContent=`${shots.length}/4 captured. Rotate the tube to ${ANGLES[shots.length]}°.`; return; }
+      const cw=shots[0].width, ch=shots[0].height, c=document.createElement("canvas"); c.width=cw*4; c.height=ch;
+      const x=c.getContext("2d"); shots.forEach((s,i)=>x.drawImage(s,i*cw,0)); review(c);
+    }catch(e){ $("camHint").textContent="Could not read that photo: "+(e.message||e); }
+  });
+}
+function recordNative(){
+  pickFile("video/*",f=>{
+    const v=document.createElement("video"); v.muted=true; v.playsInline=true; v.preload="auto"; v.src=URL.createObjectURL(f);
+    v.onerror=()=>{ $("camHint").textContent="Could not read that video."; };
+    v.onloadedmetadata=async()=>{
+      try{
+        const vw=v.videoWidth, vh=v.videoHeight, H=Math.min(vh,1080), dur=v.duration;
+        if(!vw||!isFinite(dur)) throw new Error("unsupported video");
+        const n=Math.min(MAX_SLICES,Math.floor(dur*1000/SLICE_MS));
+        slices=document.createElement("canvas"); slices.width=SLICE_W*Math.max(n,1); slices.height=H; sliceN=0;
+        const sx=slices.getContext("2d");
+        for(let i=0;i<n;i++){
+          await new Promise(r=>{ v.onseeked=r; v.currentTime=Math.min(dur-0.01,i*SLICE_MS/1000); });
+          sx.drawImage(v,(vw-SLICE_W)/2,0,SLICE_W,vh,sliceN*SLICE_W,0,SLICE_W,H); sliceN++;
+          if(i%10===0) $("camHint").textContent=`Building panorama… ${Math.round(i/n*100)}%`;
+        }
+        finishPano();
+      }catch(e){ $("camHint").textContent="Could not process video: "+(e.message||e); }
+    };
+  });
+}
+function bandCrop(){ const vw=vid.videoWidth, vh=vid.videoHeight, cw=Math.round(vw*BAND);
+  const cv=document.createElement("canvas"); cv.width=cw; cv.height=vh;
+  cv.getContext("2d").drawImage(vid,(vw-cw)/2,0,cw,vh,0,0,cw,vh); return cv; }
+function takeShot(){
+  if(!vid.videoWidth) return;
+  shots.push(bandCrop());
+  if(shots.length<4){ $("shotBtn").textContent=`Capture ${ANGLES[shots.length]}°`; $("camHint").textContent=`${shots.length}/4 captured. Rotate the tube to ${ANGLES[shots.length]}°.`; return; }
+  const cw=shots[0].width, ch=shots[0].height, c=document.createElement("canvas"); c.width=cw*4; c.height=ch;
+  const x=c.getContext("2d"); shots.forEach((s,i)=>x.drawImage(s,i*cw,0)); review(c);
+}
+function togglePano(){
+  const btn=$("panoBtn");
+  if(sliceTimer){ clearInterval(sliceTimer); sliceTimer=null; finishPano(); return; }
+  if(!vid.videoWidth) return;
+  slices=document.createElement("canvas"); slices.width=SLICE_W*MAX_SLICES; slices.height=vid.videoHeight; sliceN=0;
+  const sx=slices.getContext("2d");
+  btn.textContent="Stop scan";
+  sliceTimer=setInterval(()=>{
+    sx.drawImage(vid,(vid.videoWidth-SLICE_W)/2,0,SLICE_W,vid.videoHeight,sliceN*SLICE_W,0,SLICE_W,vid.videoHeight);
+    sliceN++; $("camHint").textContent=`Scanning… ${sliceN} slices`;
+    if(sliceN>=MAX_SLICES){ clearInterval(sliceTimer); sliceTimer=null; finishPano(); }
+  },SLICE_MS);
+}
+function finishPano(){
+  if(sliceN<2){ $("camHint").textContent="Too short, try again."; setMode("pano"); return; }
+  const c=document.createElement("canvas"); c.width=sliceN*SLICE_W; c.height=slices.height;
+  c.getContext("2d").drawImage(slices,0,0,c.width,c.height,0,0,c.width,c.height); review(c);
+}
+function review(c){
+  comp=c; $("camLive").style.display="none"; $("camReview").style.display="";
+  $("trimL").value=0; $("trimR").value=0; drawPv();
+}
+function drawPv(){
+  const l=+$("trimL").value, r=+$("trimR").value; $("tlv").textContent=l; $("trv").textContent=r;
+  const sx=Math.round(comp.width*l/100), sw=Math.max(1,Math.round(comp.width*(1-(l+r)/100)));
+  const pv=$("pv"); pv.width=sw; pv.height=comp.height; pv.getContext("2d").drawImage(comp,sx,0,sw,comp.height,0,0,sw,comp.height);
+}
+$("trimL").oninput=drawPv; $("trimR").oninput=drawPv;
+$("retake").onclick=()=>{ showLive(); setMode(mode); };
+$("usePhoto").onclick=()=>{
+  const pv=$("pv"), name=`tube_${boxId()}_${selected}_${Date.now()}.jpg`;
+  const scale=Math.min(1,4096/pv.width); let src=pv;
+  if(scale<1){ src=document.createElement("canvas"); src.width=Math.round(pv.width*scale); src.height=Math.round(pv.height*scale); src.getContext("2d").drawImage(pv,0,0,src.width,src.height); }
+  src.toBlob(b=>{
+    if(POPUP){ try{ window.opener.postMessage({type:"tube-photo",blob:b,name:`tube_${QS.get("n")||"photo"}_${Date.now()}.jpg`},"*"); }catch(e){} stopCamera(); window.close(); return; }
+    addPending(b,name); closeCamera(); },"image/jpeg",0.9);
+};
+
+function openCamWindow(){
+  const baseUrl="https://abhi9698.github.io/AB-GRIST-Reg-Template/";
+  const url=baseUrl+"?camera=1&n="+encodeURIComponent(boxId()+"_"+selected);
+  camWin=window.open(url,"tubecam","width=900,height=800");
+  if(!camWin) $("camHint").textContent="The new window was blocked. Allow pop-ups for this site and try again.";
+  else closeCamera();
+}
+window.addEventListener("message",e=>{
+  const d=e.data;
+  if(d&&d.type==="tube-photo"&&d.blob&&camWin&&e.source===camWin){ addPending(d.blob,d.name||("tube_"+Date.now()+".jpg")); }
+});
+
+if(POPUP){ document.querySelector(".app").style.display="none"; document.title="Tube camera"; openCamera(); }
+else { render(); refresh(); }
+}
+</script>
+</body>
+</html>
